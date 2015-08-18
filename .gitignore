@@ -2,7 +2,7 @@
 .envrc
 npm-debug.log
 
-node_modules/*
+api/node_modules/*
 
 # Emacs
 \#*#
