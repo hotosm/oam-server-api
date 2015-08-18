@@ -45,5 +45,5 @@ Checking http://oam-server-api:8000/tile
 200 {"test":"test"}
 ```
 
-**Note**: For the `start` and `test` targets, contents within the `server` directory gets mounted inside of the container via a volume to ensure that the latest code changes are being tested.
+**Note**: For the `start` and `test` targets, contents within the `api` directory gets mounted inside of the container via a volume to ensure that the latest code changes are being tested.
 
