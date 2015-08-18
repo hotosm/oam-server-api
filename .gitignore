@@ -1,0 +1,17 @@
+.env
+.envrc
+npm-debug.log
+
+node_modules/*
+
+# Emacs
+\#*#
+*~
+.#*
+
+# Mac
+.DS_Store
+
+# Deployment
+deployment/cfn/*.json
+*.pyc
