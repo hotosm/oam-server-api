@@ -22,6 +22,6 @@ RUN useradd \
 USER oam
 WORKDIR /app/api
 
-COPY . /app/api
+COPY api/ /app/api
 
 ENTRYPOINT ["npm"]
