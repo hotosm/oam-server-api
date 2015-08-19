@@ -1,5 +1,8 @@
 # OpenAerialMap Server: API component
 
+[![Circle CI](https://circleci.com/gh/hotosm/oam-server-api/tree/master.svg?style=svg)](https://circleci.com/gh/hotosm/oam-server-api/tree/master)
+[![Docker Repository on Quay.io](https://quay.io/repository/hotosm/oam-server-api/status "Docker Repository on Quay.io")](https://quay.io/repository/hotosm/oam-server-api)
+
 The API component of OAM Server is a node `express` server that exposes API endpoints. A list of the endpoints exposed, and their functionality, is found below
 
 ### TODO: List endpoints and what they do.

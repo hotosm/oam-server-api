@@ -1,0 +1,23 @@
+machine:
+  services:
+    - docker
+
+dependencies:
+  override:
+    - docker login -e . -p ${QUAY_PASSWORD} -u ${QUAY_USER} quay.io
+
+test:
+  pre:
+    - docker build -t quay.io/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1:0:7} .
+  override:
+    - /bin/true
+
+deployment:
+  latest:
+    branch: master
+    commands:
+      - docker push quay.io/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1:0:7}
+  release:
+    tag: /[0-9]+(\.[0-9]+)*/
+    commands:
+      - docker push quay.io/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}:$(git tag -l --contains HEAD)
