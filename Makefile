@@ -5,7 +5,6 @@ all: api
 api:
 	@docker build -f ./Dockerfile -t $(DOCKER_IMAGE) .
 
-
 start: api
 	@docker run \
 		--detach \
