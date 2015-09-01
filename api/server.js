@@ -12,11 +12,11 @@ if (process.env.NODE_ENV !== "production") {
 
 app.use(bodyParser.json());
 
-app.get('/', function(req, res) {
+app.get("/", function(req, res) {
   res.send("pong");
 });
 
-app.post("/tile", function(req, res){
+app.post("/tile", function(req, res) {
   console.log(req.body);
   return res.json(req.body);
 });
