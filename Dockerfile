@@ -5,23 +5,23 @@ MAINTAINER Humanitarian OpenStreetMap Team
 ENV HOME /app
 ENV PORT 8000
 
-RUN mkdir -p /app/api
+RUN mkdir -p /app
 WORKDIR /app
 
-COPY ./api/package.json /app/
+COPY ./package.json /app/
 
 RUN npm install
 
 RUN useradd \
-  --home-dir /app/api \
+  --home-dir /app \
   --system \
   --user-group \
   oam \
   && chown -R oam:oam /app
 
 USER oam
-WORKDIR /app/api
+WORKDIR /app
 
-COPY . /app/api
+COPY . /app
 
-ENTRYPOINT ["npm"]
+ENTRYPOINT ["npm", "start"]
