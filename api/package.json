@@ -15,9 +15,11 @@
   },
   "dependencies": {
     "body-parser": "^1.13.1",
+    "chance": "^0.7.6",
     "express": "^4.13.0",
     "morgan": "^1.6.0",
-    "request": "^2.58.0"
+    "request": "^2.58.0",
+    "uuid": "^2.0.1"
   },
   "bugs": {
     "url": "https://github.com/hotosm/oam-server-api/issues"
