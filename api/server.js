@@ -7,7 +7,12 @@ var bodyParser = require("body-parser"),
     chance = require("chance"),
     express = require("express"),
     morgan = require("morgan"),
-    uuid = require("uuid");
+    uuid = require("uuid"),
+    _ = require("underscore");
+
+var auth = require("./lib/auth"),
+    statusStore = require("./lib/status-store"),
+    tiler = require("./lib/tiler");
 
 var app = express().disable("x-powered-by");
 
@@ -43,10 +48,45 @@ app.post("/tile", function(req, res, next) {
     return next(err);
   }
 
-  return res.status(202).json({
-    status: "PENDING",
-    id: uuid.v4(),
-    queued_at: new Date()
+  // Require a token for authentication. Hack-tastic.
+  if(!req.query.token) {
+    return res.status(500).json({
+      error: "TOKEN REQUIRED",
+      message: "'token' query parameter is needed to kick off tiling jobs."
+    });
+  }
+
+  return auth.fetchTokens(function(err, tokens) {
+    if(!_.contains(tokens, req.query.token)) {
+      return res.status(500).json({
+        error: "INVALID TOKEN",
+        message: "The token parameter is invalid. Please contact an administrator for a valid token."
+      });
+    }
+
+    var jobId = uuid.v4();
+
+    return tiler.launchJob(jobId, req.body.sources, function(err) {
+      if (err) {
+        return res.status(500).json({
+          error: "Tiler error",
+          message: err.message
+        });
+      }
+
+      return statusStore.create(jobId, function(err) {
+        if (err) {
+          return res.status(500).json({
+            error: "Tiler error",
+            message: err.message
+          });
+        }
+
+        return res.status(202).json({
+          id: jobId
+        });
+      });
+    });
   });
 });
 
@@ -54,66 +94,76 @@ app.post("/tile", function(req, res, next) {
  * Get info about a tiling request.
  */
 app.get("/info/:uuid", function(req, res, next) {
+  tiler.fetchRequest(req.params.uuid, function(err, tileRequest) {
+    if (err) {
+      return res.status(404).json({
+        error: "NotFound",
+        message: util.format("'%s' not found.", req.params.uuid)
+      });
+    }
+
+    return res.json({
+      id: tileRequest.jobId,
+      images: tileRequest.images,
+      request_time: tileRequest.request_time
+    });
+  });
+});
+
+/**
+ * Get the status of a tiling request.
+ */
+app.get("/status/:uuid", function(req, res, next) {
   // predictable responses for debugging
-  switch (req.params.uuid) {
-  case "pending":
-    return res.json({
-      status: "PENDING",
-      id: req.params.uuid,
-      queued_at: chance.date()
-    });
+  statusStore.retrieve(req.params.uuid, function(err, status) {
+    if (err) {
+      return res.status(404).json({
+        error: "NotFound",
+        message: util.format("'%s' not found.", req.params.uuid)
+      });
+    }
 
-  case "processing":
-    return res.json({
-      status: "PROCESSING",
-      id: req.params.uuid,
-      queued_at: chance.date(),
-      started_at: chance.date(),
-      message: "Reprojecting"
-    });
+    if(!status.status) {
+      return res.status(500).json({
+        error: "Invalid Status",
+        message: util.format("Invalid status found: '%j'.", status)
+      });
+    }
 
-  case "completed":
-    return res.json({
-      status: "COMPLETED",
-      id: req.params.uuid,
-      queued_at: chance.date(),
-      started_at: chance.date(),
-      completed_at: chance.date(),
-      // TODO fetch this from a TileJSON file stored with the tiles (and cache
-      // it)
-      tilejson: {
-        tilejson: "1.0.0",
-        name: "OpenStreetMap",
-        description: "A free editable map of the whole world.",
-        version: "1.0.0",
-        attribution: "(c) OpenStreetMap contributors, CC-BY-SA",
-        scheme: "xyz",
-        tiles: [
-            "http://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            "http://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            "http://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        ],
-        minzoom: 0,
-        maxzoom: 18,
-        bounds: [ -180, -85, 180, 85 ]
-      }
-    });
+    switch(status.status) {
+    case "PENDING":
+      return res.json({
+        status: "PENDING",
+        id: req.params.uuid
+      });
 
-  case "failed":
-    return res.json({
-      status: "FAILED",
-      id: req.params.uuid,
-      queued_at: chance.date(),
-      started_at: chance.date(),
-      failed_at: chance.date(),
-      error: "TilingFailed",
-      message: "Tiling these images failed for no particularly good reason"
-    });
-  }
+    case "STARTED":
+    case "FINISHED":
+      return res.json({
+        status: "PROCESSING",
+        id: req.params.uuid,
+        message: status.stage
+      });
 
-  return res.status(404).json({
-    error: "NotFound",
-    message: util.format("'%s' not found.", req.params.uuid)
+    case "SUCCESS":
+      return res.json({
+        status: "COMPLETED",
+        id: req.params.uuid,
+        tilejson: status.tileJson
+      });
+
+    case "FAILED":
+      return res.json({
+        status: "FAILED",
+        id: req.params.uuid,
+        error: status.error
+      });
+    default:
+      return res.status(500).json({
+        error: "Invalid Status",
+        message: util.format("Invalid status found: '%j'.", status)
+      });
+    }
   });
 });
 
@@ -121,27 +171,14 @@ app.get("/info/:uuid", function(req, res, next) {
  * Get a list of tilesets we know about. (Consider OAM Catalog the definitive
  * source, however.)
  */
-app.get("/tilesets", function(req, res, next) {
-  // TODO fetch all available TileJSON from S3
-  return res.json({
-    tilesets: [
-      {
-        tilejson: "1.0.0",
-        name: "OpenStreetMap",
-        description: "A free editable map of the whole world.",
-        version: "1.0.0",
-        attribution: "(c) OpenStreetMap contributors, CC-BY-SA",
-        scheme: "xyz",
-        tiles: [
-            "http://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            "http://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            "http://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        ],
-        minzoom: 0,
-        maxzoom: 18,
-        bounds: [ -180, -85, 180, 85 ]
-      }
-    ]
+app.get("/requests", function(req, res, next) {
+  
+  tiler.listRequests(function(err, requests) {
+    if (err) {
+      return next(err);
+    }
+
+    return res.json(requests);
   });
 });
 
