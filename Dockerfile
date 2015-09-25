@@ -5,6 +5,11 @@ MAINTAINER Humanitarian OpenStreetMap Team
 ENV HOME /app
 ENV PORT 8000
 
+RUN apt-get update
+RUN apt-get install -y python
+RUN apt-get install -y python-pip
+RUN pip install awscli
+
 RUN mkdir -p /app/api
 WORKDIR /app
 
@@ -22,6 +27,6 @@ RUN useradd \
 USER oam
 WORKDIR /app/api
 
-COPY . /app/api
+COPY api/ /app/api
 
 ENTRYPOINT ["npm"]

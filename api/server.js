@@ -1,8 +1,18 @@
 "use strict";
 
-var express = require("express"),
+var assert = require("assert"),
+    util = require("util");
+
+var bodyParser = require("body-parser"),
+    chance = require("chance"),
+    express = require("express"),
     morgan = require("morgan"),
-    bodyParser = require("body-parser");
+    uuid = require("uuid"),
+    _ = require("underscore");
+
+var auth = require("./lib/auth"),
+    statusStore = require("./lib/status-store"),
+    tiler = require("./lib/tiler");
 
 var app = express().disable("x-powered-by");
 
@@ -12,13 +22,187 @@ if (process.env.NODE_ENV !== "production") {
 
 app.use(bodyParser.json());
 
-app.get('/', function(req, res) {
+app.get("/", function(req, res) {
   res.send("pong");
 });
 
-app.post("/tile", function(req, res){
-  console.log(req.body);
-  return res.json(req.body);
+/**
+ * Given a list of images, return a UUID that can be used to track the progress
+ * of a tiling request.
+ */
+app.post("/tile", function(req, res, next) {
+  try {
+    assert.equal("application/json", req.headers["content-type"], "Payload must be 'application/json'");
+    assert.ok(Array.isArray(req.body.sources), "sources must be a list of images.");
+
+    req.body.sources.forEach(function(src) {
+      // sources may either be a list of strings or a list of objects
+      if (typeof src !== "string") {
+        // if a list of objects, uri is the only required field (other OIN
+        // metadata is welcomed and may be used to adjust tiling job
+        // properties)
+        assert.ok(src.uri, "source 'uri' is required.");
+      }
+    });
+  } catch (err) {
+    return next(err);
+  }
+
+  // Require a token for authentication. Hack-tastic.
+  if(!req.query.token) {
+    return res.status(500).json({
+      error: "TOKEN REQUIRED",
+      message: "'token' query parameter is needed to kick off tiling jobs."
+    });
+  }
+
+  return auth.fetchTokens(function(err, tokens) {
+    if(!_.contains(tokens, req.query.token)) {
+      return res.status(500).json({
+        error: "INVALID TOKEN",
+        message: "The token parameter is invalid. Please contact an administrator for a valid token."
+      });
+    }
+
+    var jobId = uuid.v4();
+
+    return tiler.launchJob(jobId, req.body.sources, function(err) {
+      if (err) {
+        return res.status(500).json({
+          error: "Tiler error",
+          message: err.message
+        });
+      }
+
+      return statusStore.create(jobId, function(err) {
+        if (err) {
+          return res.status(500).json({
+            error: "Tiler error",
+            message: err.message
+          });
+        }
+
+        return res.status(202).json({
+          id: jobId
+        });
+      });
+    });
+  });
+});
+
+/**
+ * Get info about a tiling request.
+ */
+app.get("/info/:uuid", function(req, res, next) {
+  tiler.fetchRequest(req.params.uuid, function(err, tileRequest) {
+    if (err) {
+      return res.status(404).json({
+        error: "NotFound",
+        message: util.format("'%s' not found.", req.params.uuid)
+      });
+    }
+
+    return res.json({
+      id: tileRequest.jobId,
+      images: tileRequest.images,
+      request_time: tileRequest.request_time
+    });
+  });
+});
+
+/**
+ * Get the status of a tiling request.
+ */
+app.get("/status/:uuid", function(req, res, next) {
+  // predictable responses for debugging
+  statusStore.retrieve(req.params.uuid, function(err, status) {
+    if (err) {
+      return res.status(404).json({
+        error: "NotFound",
+        message: util.format("'%s' not found.", req.params.uuid)
+      });
+    }
+
+    if(!status.status) {
+      return res.status(500).json({
+        error: "Invalid Status",
+        message: util.format("Invalid status found: '%j'.", status)
+      });
+    }
+
+    switch(status.status) {
+    case "PENDING":
+      return res.json({
+        status: "PENDING",
+        id: req.params.uuid
+      });
+
+    case "STARTED":
+    case "FINISHED":
+      return res.json({
+        status: "PROCESSING",
+        id: req.params.uuid,
+        message: status.stage
+      });
+
+    case "SUCCESS":
+      return res.json({
+        status: "COMPLETED",
+        id: req.params.uuid,
+        tilejson: status.tileJson
+      });
+
+    case "FAILED":
+      return res.json({
+        status: "FAILED",
+        id: req.params.uuid,
+        error: status.error
+      });
+    default:
+      return res.status(500).json({
+        error: "Invalid Status",
+        message: util.format("Invalid status found: '%j'.", status)
+      });
+    }
+  });
+});
+
+/**
+ * Get a list of tilesets we know about. (Consider OAM Catalog the definitive
+ * source, however.)
+ */
+app.get("/requests", function(req, res, next) {
+  
+  tiler.listRequests(function(err, requests) {
+    if (err) {
+      return next(err);
+    }
+
+    return res.json(requests);
+  });
+});
+
+/**
+ * Get current system status.
+ */
+app.get("/status", function(req, res, next) {
+  return res.json({
+    pending: chance.natural(),
+    processing: chance.natural()
+  });
+});
+
+// error handling
+
+app.use(function(err, req, res, next) {
+  if (process.env.NODE_ENV !== "production") {
+    console.warn(err.stack);
+  }
+
+  return res.status(500).json({
+    error: err.name,
+    message: err.message
+  });
 });
 
 app.listen(process.env.PORT || 8000, function() {

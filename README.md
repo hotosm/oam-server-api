@@ -5,7 +5,116 @@
 
 The API component of OAM Server is a node `express` server that exposes API endpoints. A list of the endpoints exposed, and their functionality, is found below
 
-### TODO: List endpoints and what they do.
+## ENDPOINTS
+
+#### /tile
+
+This takes a tiling request POSTed, and a auth token in a query string, and kicks off a tiling job.
+
+Here's an example request JSON:
+
+```javascript
+{
+  "sources" : [
+    "http://hotosm-oam.s3.amazonaws.com/356f564e3a0dc9d15553c17cf4583f21-0.tif",
+    "http://oin-astrodigital.s3.amazonaws.com/LC81420412015111LGN00_bands_432.TIF"
+  ]
+}
+```
+
+As you can see, all the request has is the source images in a `sources` property.
+
+You'll need to provide a valid token to the request in a query string, for example:
+
+```
+curl -X POST -d @test-req.json http://localhost:8000/tile?token=5a77ef22-4328-4d11-8f64-2ce90dff275a --header "Content-Type:application/json"
+```
+
+A response from a valid tile submission looks like:
+
+```javascript
+{"id":"feb310ad-b2eb-4ec6-8f23-dcdaf9bc6391"}
+```
+
+The `id` is the job ID, which is important to keep track of, because that is how you will be able to check the status of the job.
+
+#### /status
+
+This takes a job `id` and gives a status. If the job is complete, the `tileJson` property will give the TileJSON result of the tiling job.
+
+The request takes the job id in the path:
+```
+curl http://localhost:8000/status/feb310ad-b2eb-4ec6-8f23-dcdaf9bc6391
+```
+
+And will return one of the following:
+```javascript
+{"status":"PENDING","id":"feb310ad-b2eb-4ec6-8f23-dcdaf9bc6391"}
+{"status":"STARTED","stage":"chunk","id":"feb310ad-b2eb-4ec6-8f23-dcdaf9bc6391"}
+{"status":"FINISHED","stage":"chunk","id":"feb310ad-b2eb-4ec6-8f23-dcdaf9bc6391"}
+{"status":"FAILED","stage":"chunk","error":"An error message.","id":"feb310ad-b2eb-4ec6-8f23-dcdaf9bc6391"}
+{"status":"STARTED","stage":"mosaic","id":"feb310ad-b2eb-4ec6-8f23-dcdaf9bc6391"}
+{"status":"FAILED","stage":"mosaic","error":"An error message.","id":"feb310ad-b2eb-4ec6-8f23-dcdaf9bc6391"}
+{"status":"COMPLETE","id":"feb310ad-b2eb-4ec6-8f23-dcdaf9bc6391","tileJson": {...} }
+```
+
+The TileJSON of a completed job will look like this:
+```javascript
+{
+    "tilejson": "2.1.0",
+    "name": "OAM Server Mosaic feb310ad-b2eb-4ec6-8f23-dcdaf9bc6391",
+    "attribution": "<a href='http://github.com/openimagerynetwork/'>OIN contributors</a>",
+    "scheme": "xyz",
+    "tiles": [
+        "http://oam-tiles.s3.amazonaws.com/001199d2-381a-4498-86de-e7f11da0a191/{z}/{x}/{y}.png"
+    ]
+}
+```
+
+#### /info
+
+Given a job `id`, this gives information about the request. For instance,
+
+```
+curl http://localhost:8000/info/feb310ad-b2eb-4ec6-8f23-dcdaf9bc6391
+```
+
+might yield
+```javascript
+{
+    "id": "feb310ad-b2eb-4ec6-8f23-dcdaf9bc6391",
+    "images": [
+        "http://hotosm-oam.s3.amazonaws.com/356f564e3a0dc9d15553c17cf4583f21-0.tif",
+        "http://oin-astrodigital.s3.amazonaws.com/LC81420412015111LGN00_bands_432.TIF"
+    ],
+    "request_time": "2015-09-24T03:16:54.196Z"
+}
+```
+
+#### /requests
+
+This will list all the requests that are still on the APi's radar (tiling requests and statuses get cleared after a number of days).
+
+```
+curl http://localhost:8000/requests
+```
+
+```javascript
+[
+    {
+        "jobId": "24bae674-329b-4a54-802b-c87ca3357267",
+        "request_time": "2015-09-24T03:15:11.000Z"
+    },
+    {
+        "jobId": "d01c4418-66c5-445f-971e-1430ffa4102e",
+        "request_time": "2015-09-24T03:15:35.000Z"
+    },
+    {
+        "jobId": "feb310ad-b2eb-4ec6-8f23-dcdaf9bc6391",
+        "request_time": "2015-09-24T03:16:55.000Z"
+    }
+]
+```
 
 ## Usage
 
@@ -49,4 +158,3 @@ Checking http://oam-server-api:8000/tile
 ```
 
 **Note**: For the `start` and `test` targets, contents within the `api` directory gets mounted inside of the container via a volume to ensure that the latest code changes are being tested.
-
