@@ -153,6 +153,27 @@ CONTAINER ID        IMAGE                   COMMAND             CREATED         
 b1d7b15d6863        oam/server-api:latest   "npm start"         19 seconds ago      Up 16 seconds       0.0.0.0:8000->8000/tcp   oam-server-api
 ```
 
+### Environment Variables
+
+* `OAM_SMALL_CLUSTER_SIZE` - Number of EMR nodes to use for a "small" job.
+  Required.
+* `OAM_MED_CLUSTER_SIZE` - Number of EMR nodes to use for a "medium" job.
+  Required.
+* `OAM_LARGE_CLUSTER_SIZE` - Number of EMR nodes to use for a "large" job.
+  Required.
+* `OAM_SMALL_IMAGE_COUNT` - Upper bound on the number of images for a "large"
+  job. Required.
+* `OAM_MED_IMAGE_COUNT` - Upper bound on the number of images for a "medium"
+  job.  Required.
+* `OAM_KEYNAME` - SSH key name (for interacting with an EMR cluster). Required.
+* `OAM_MASTER_INSTANCE_TYPE` - EC2 instance type to use for master nodes. Required.
+* `OAM_WORKER_INSTANCE_TYPE` - EC2 instance type to use for task nodes. Required.
+* `OAM_WORKER_INSTANCE_BIDPRICE` - Target EC2 spot price for task nodes. Required.
+* `OAM_STATUS_BUCKET` - S3 bucket containing task status. Required.
+* `OAM_STATUS_PREFIX` - Path prefix for task statuses. Required.
+* `OAM_TILER_TOKEN_BUCKET` - S3 bucket containing OAM Catalog keys. Required.
+* `OAM_TILER_TOKEN_KEY` - Filename (in above bucket) containing keys. Required.
+
 ## Testing
 
 To execute the test suite, use the `test` target:
