@@ -15,7 +15,7 @@
   "dependencies": {
     "aws-sdk": "^2.1.45",
     "body-parser": "^1.13.1",
-    "chance": "^0.7.7",
+    "chance": "^0.8.0",
     "debug": "^2.2.0",
     "express": "^4.13.3",
     "holdtime": "^0.1.1",
