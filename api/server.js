@@ -31,7 +31,7 @@ app.get("/", function(req, res) {
  */
 app.post("/tile", function(req, res, next) {
   try {
-    assert.equal("application/json", req.headers["content-type"], "Payload must be 'application/json'");
+    assert.equal("application/json", req.headers["content-type"], "Payload's Content-Type must be 'application/json'");
     assert.ok(Array.isArray(req.body.sources), "sources must be a list of images.");
 
     req.body.sources.forEach(function(src) {
