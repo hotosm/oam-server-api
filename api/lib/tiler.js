@@ -93,10 +93,20 @@ module.exports.launchJob = function launchJob(jobId, images, callback) {
       return callback(err);
     }
 
-    var clusterParams = calculateClusterParameters(images);
-    var masterInstanceGroup = util.format("Name=Master,InstanceCount=1,InstanceGroupType=MASTER,InstanceType=%s", MASTER_INSTANCE_TYPE);
-    var coreInstanceGroup = util.format("Name=Workers,InstanceCount=%d,BidPrice=%s,InstanceGroupType=CORE,InstanceType=%s", 
-                                        clusterParams.numNodes, WORKER_INSTANCE_BIDPRICE, WORKER_INSTANCE_TYPE);
+    var clusterParams = calculateClusterParameters(images),
+        instanceGroups = [];
+
+    // add 1 master
+    instanceGroups.push(util.format("Name=Master,InstanceCount=1,InstanceGroupType=MASTER,InstanceType=%s", MASTER_INSTANCE_TYPE));
+
+    // add 2 core workers (reserved)
+    // TODO make this configurable
+    instanceGroups.push(util.format("Name=Workers,InstanceCount=%d,InstanceGroupType=CORE,InstanceType=%s", 2, WORKER_INSTANCE_TYPE));
+
+    // add N task workers (spot)
+    if (clusterParams.numNodes > 0) {
+      instanceGroups.push(util.format("Name=SpotWorkers,InstanceCount=%d,BidPrice=%s,InstanceGroupType=TASK,InstanceType=%s", clusterParams.numNodes, WORKER_INSTANCE_BIDPRICE, WORKER_INSTANCE_TYPE));
+    }
 
     var chunkStepArgs = [
       "--deploy-mode","cluster",
@@ -109,7 +119,7 @@ module.exports.launchJob = function launchJob(jobId, images, callback) {
 
     var chunkStep = [
       "Name=Chunk",
-      "ActionOnFailure=CANCEL_AND_WAIT",
+      "ActionOnFailure=TERMINATE_CLUSTER",
       "Type=Spark",
       "Args=[" + chunkStepArgs.join() + "]"
     ].join();
@@ -126,30 +136,29 @@ module.exports.launchJob = function launchJob(jobId, images, callback) {
 
     var mosaicStep = [
       "Name=Mosaic",
-      "ActionOnFailure=CONTINUE",
+      "ActionOnFailure=TERMINATE_CLUSTER",
       "Type=Spark",
       "Args=[" + mosaicStepArgs.join() + "]"
     ].join();
 
-    var args = null;
-    if(process.env.OAM_EMR_CLUSTER_ID) {
+    var args = [
+      "emr", "create-cluster",
+      "--name", "OAM Tiler for job " + jobId,
+      "--log-uri", "s3://oam-server-tiler/emr/logs/",
+      "--release-label", "emr-4.1.0",
+      "--auto-terminate",
+      "--use-default-roles",
+      "--ec2-attributes", "KeyName=" + KEYNAME,
+      "--bootstrap-action", "Path=s3://oam-server-tiler/emr/bootstrap.sh",
+      "--applications", "Name=Spark",
+      "--configurations", "https://oam-server-tiler.s3.amazonaws.com/emr/configurations.json",
+      "--instance-groups"
+    ].concat(instanceGroups);
+
+    if (process.env.OAM_EMR_CLUSTER_ID) {
       args = [
         "emr", "add-steps",
         "--cluster-id", process.env.OAM_EMR_CLUSTER_ID
-      ];
-    } else {
-      args = [
-        "emr", "create-cluster",
-        "--name", "OAM Tiler for job " + jobId,
-        "--log-uri", "s3://oam-server-tiler/emr/logs/",
-        "--release-label", "emr-4.0.0",
-        "--auto-terminate",
-        "--use-default-roles",
-        "--ec2-attributes", "KeyName=" + KEYNAME,
-        "--bootstrap-action", "Path=s3://oam-server-tiler/emr/bootstrap.sh",
-        "--applications", "Name=Spark",
-        "--configurations", "https://oam-server-tiler.s3.amazonaws.com/emr/configurations.json",
-        "--instance-groups", masterInstanceGroup, coreInstanceGroup
       ];
     }
 
