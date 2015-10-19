@@ -49,7 +49,7 @@ app.post("/tile", function(req, res, next) {
 
   // Require a token for authentication. Hack-tastic.
   if (!req.query.token) {
-    return res.status(500).json({
+    return res.status(403).json({
       error: "TOKEN REQUIRED",
       message: "'token' query parameter is needed to kick off tiling jobs."
     });
@@ -57,7 +57,7 @@ app.post("/tile", function(req, res, next) {
 
   return auth.fetchTokens(function(err, tokens) {
     if (tokens.indexOf(req.query.token) < 0) {
-      return res.status(500).json({
+      return res.status(403).json({
         error: "INVALID TOKEN",
         message: "The token parameter is invalid. Please contact an administrator for a valid token."
       });
