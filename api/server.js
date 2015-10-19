@@ -7,8 +7,7 @@ var bodyParser = require("body-parser"),
     chance = require("chance"),
     express = require("express"),
     morgan = require("morgan"),
-    uuid = require("uuid"),
-    _ = require("underscore");
+    uuid = require("uuid");
 
 var auth = require("./lib/auth"),
     statusStore = require("./lib/status-store"),
@@ -57,7 +56,7 @@ app.post("/tile", function(req, res, next) {
   }
 
   return auth.fetchTokens(function(err, tokens) {
-    if(!_.contains(tokens, req.query.token)) {
+    if (tokens.indexOf(req.query.token) < 0) {
       return res.status(500).json({
         error: "INVALID TOKEN",
         message: "The token parameter is invalid. Please contact an administrator for a valid token."
