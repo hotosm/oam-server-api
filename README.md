@@ -178,6 +178,7 @@ b1d7b15d6863        oam/server-api:latest   "npm start"         19 seconds ago  
 * `OAM_STATUS_PREFIX` - Path prefix for task statuses. Required.
 * `OAM_TILER_TOKEN_BUCKET` - S3 bucket containing OAM Catalog keys. Required.
 * `OAM_TILER_TOKEN_KEY` - Filename (in above bucket) containing keys. Required.
+* `OAM_EMR_CLUSTER_ID` - EMR cluster id. Optional.
 
 ## Testing
 
