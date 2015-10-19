@@ -155,6 +155,11 @@ b1d7b15d6863        oam/server-api:latest   "npm start"         19 seconds ago  
 
 ### Environment Variables
 
+* `AWS_ACCESS_KEY_ID` - AWS access key id. Required unless an IAM role is in
+  use.
+* `AWS_SECRET_ACCESS_KEY` - AWS secret access key. Required unless an IAM role
+* `AWS_DEFAULT_REGION` - AWS region. Required.
+  is in use.
 * `OAM_SMALL_CLUSTER_SIZE` - Number of EMR nodes to use for a "small" job.
   Required.
 * `OAM_MED_CLUSTER_SIZE` - Number of EMR nodes to use for a "medium" job.
