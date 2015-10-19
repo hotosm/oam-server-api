@@ -56,6 +56,10 @@ app.post("/tile", function(req, res, next) {
   }
 
   return auth.fetchTokens(function(err, tokens) {
+    if (err) {
+      return next(err);
+    }
+
     if (tokens.indexOf(req.query.token) < 0) {
       return res.status(403).json({
         error: "INVALID TOKEN",
@@ -67,18 +71,12 @@ app.post("/tile", function(req, res, next) {
 
     return tiler.launchJob(jobId, req.body.sources, function(err) {
       if (err) {
-        return res.status(500).json({
-          error: "Tiler error",
-          message: err.message
-        });
+        return next(err);
       }
 
       return statusStore.create(jobId, function(err) {
         if (err) {
-          return res.status(500).json({
-            error: "Tiler error",
-            message: err.message
-          });
+          return next(err);
         }
 
         return res.status(202).json({
@@ -194,10 +192,17 @@ app.get("/status", function(req, res, next) {
 
 app.use(function(err, req, res, next) {
   if (process.env.NODE_ENV !== "production") {
+    console.warn("Request body:", req.body);
     console.warn(err.stack);
   }
 
-  return res.status(500).json({
+  var status = 500;
+
+  if (err.name === "AssertionError") {
+    status = 400;
+  }
+
+  return res.status(status).json({
     error: err.name,
     message: err.message
   });
