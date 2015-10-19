@@ -31,6 +31,7 @@ app.get("/", function(req, res) {
  */
 app.post("/tile", function(req, res, next) {
   try {
+    assert.ok(req.query.token, "'token' query parameter is needed to kick off tiling jobs.");
     assert.equal("application/json", req.headers["content-type"], "Payload's Content-Type must be 'application/json'");
     assert.ok(Array.isArray(req.body.sources), "sources must be a list of images.");
 
@@ -45,14 +46,6 @@ app.post("/tile", function(req, res, next) {
     });
   } catch (err) {
     return next(err);
-  }
-
-  // Require a token for authentication. Hack-tastic.
-  if (!req.query.token) {
-    return res.status(403).json({
-      error: "TOKEN REQUIRED",
-      message: "'token' query parameter is needed to kick off tiling jobs."
-    });
   }
 
   return auth.fetchTokens(function(err, tokens) {
