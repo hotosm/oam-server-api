@@ -23,12 +23,12 @@ test: start
 		--volume $(PWD)/api:/app/api \
 		$(DOCKER_IMAGE) test
 
-	@docker kill oam-server-api >> /dev/null
-	@docker rm oam-server-api >> /dev/null
+	@docker kill oam-server-api > /dev/null
+	@docker rm oam-server-api > /dev/null
 
 clean:
-	@docker kill oam-server-api >> /dev/null 2>&1 || true
-	@docker rm oam-server-api >> /dev/null 2>&1 || true
+	@docker kill oam-server-api > /dev/null 2>&1 || true
+	@docker rm oam-server-api > /dev/null 2>&1 || true
 
 
 .PHONY: all api start test clean
