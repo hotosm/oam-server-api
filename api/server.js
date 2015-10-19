@@ -84,7 +84,7 @@ app.post("/tile", function(req, res, next) {
  * Get info about a tiling request.
  */
 app.get("/info/:uuid", function(req, res, next) {
-  tiler.fetchRequest(req.params.uuid, function(err, tileRequest) {
+  return tiler.fetchRequest(req.params.uuid, function(err, tileRequest) {
     if (err) {
       return res.status(404).json({
         error: "NotFound",
@@ -105,7 +105,7 @@ app.get("/info/:uuid", function(req, res, next) {
  */
 app.get("/status/:uuid", function(req, res, next) {
   // predictable responses for debugging
-  statusStore.retrieve(req.params.uuid, function(err, status) {
+  return statusStore.retrieve(req.params.uuid, function(err, status) {
     if (err) {
       return res.status(404).json({
         error: "NotFound",
