@@ -48,7 +48,7 @@ app.post("/tile", function(req, res, next) {
   }
 
   // Require a token for authentication. Hack-tastic.
-  if(!req.query.token) {
+  if (!req.query.token) {
     return res.status(500).json({
       error: "TOKEN REQUIRED",
       message: "'token' query parameter is needed to kick off tiling jobs."
@@ -122,14 +122,14 @@ app.get("/status/:uuid", function(req, res, next) {
       });
     }
 
-    if(!status.status) {
+    if (!status.status) {
       return res.status(500).json({
         error: "Invalid Status",
         message: util.format("Invalid status found: '%j'.", status)
       });
     }
 
-    switch(status.status) {
+    switch (status.status) {
     case "PENDING":
       return res.json({
         status: "PENDING",
@@ -171,8 +171,7 @@ app.get("/status/:uuid", function(req, res, next) {
  * source, however.)
  */
 app.get("/requests", function(req, res, next) {
-  
-  tiler.listRequests(function(err, requests) {
+  return tiler.listRequests(function(err, requests) {
     if (err) {
       return next(err);
     }
