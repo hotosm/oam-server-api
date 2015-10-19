@@ -8,6 +8,7 @@ api:
 start: api
 	@docker run \
 		--detach \
+		--rm \
 		--name oam-server-api \
 		--publish 8000:8000 \
 		--volume $(PWD)/api:/app/api \
