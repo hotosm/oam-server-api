@@ -3,13 +3,16 @@
 [![Circle CI](https://circleci.com/gh/hotosm/oam-server-api/tree/master.svg?style=svg)](https://circleci.com/gh/hotosm/oam-server-api/tree/master)
 [![Docker Repository on Quay.io](https://quay.io/repository/hotosm/oam-server-api/status "Docker Repository on Quay.io")](https://quay.io/repository/hotosm/oam-server-api)
 
-The API component of OAM Server is a node `express` server that exposes API endpoints. A list of the endpoints exposed, and their functionality, is found below
+The API component of OAM Server is a node `express` server that exposes API
+endpoints. A list of the endpoints exposed, and their functionality, is found
+below
 
 ## ENDPOINTS
 
 #### /tile
 
-This takes a tiling request POSTed, and a auth token in a query string, and kicks off a tiling job.
+This takes a tiling request `POST`ed, and a auth token in a query string, and
+kicks off a tiling job.
 
 Here's an example request JSON:
 
@@ -22,9 +25,11 @@ Here's an example request JSON:
 }
 ```
 
-As you can see, all the request has is the source images in a `sources` property.
+As you can see, all the request has is the source images in a `sources`
+property.
 
-You'll need to provide a valid token to the request in a query string, for example:
+You'll need to provide a valid token to the request in a query string, for
+example:
 
 ```
 curl -X POST -d @test-req.json http://localhost:8000/tile?token=5a77ef22-4328-4d11-8f64-2ce90dff275a --header "Content-Type:application/json"
@@ -36,11 +41,13 @@ A response from a valid tile submission looks like:
 {"id":"feb310ad-b2eb-4ec6-8f23-dcdaf9bc6391"}
 ```
 
-The `id` is the job ID, which is important to keep track of, because that is how you will be able to check the status of the job.
+The `id` is the job ID, which is important to keep track of, because that is
+how you will be able to check the status of the job.
 
 #### /status
 
-This takes a job `id` and gives a status. If the job is complete, the `tileJson` property will give the TileJSON result of the tiling job.
+This takes a job `id` and gives a status. If the job is complete, the
+`tileJson` property will give the TileJSON result of the tiling job.
 
 The request takes the job id in the path:
 ```
@@ -93,7 +100,8 @@ might yield
 
 #### /requests
 
-This will list all the requests that are still on the APi's radar (tiling requests and statuses get cleared after a number of days).
+This will list all the requests that are still on the APi's radar (tiling
+requests and statuses get cleared after a number of days).
 
 ```
 curl http://localhost:8000/requests
@@ -118,7 +126,10 @@ curl http://localhost:8000/requests
 
 ## Usage
 
-The main avenue for developing against the OpenAerialMap (OAM) server is via Docker. To get started, ensure that you have a [working Docker environment](https://docs.docker.com/machine/), with version `>=1.7`. In addition, all interactions with Docker and NPM are wrapped within a `Makefile`.
+The main avenue for developing against the OpenAerialMap (OAM) server is via
+Docker. To get started, ensure that you have a [working Docker
+environment](https://docs.docker.com/machine/), with version `>=1.7`. In
+addition, all interactions with Docker and NPM are wrapped within a `Makefile`.
 
 In order to build this image, use the `api` target:
 
@@ -157,4 +168,6 @@ Checking http://oam-server-api:8000/tile
 200 {"test":"test"}
 ```
 
-**Note**: For the `start` and `test` targets, contents within the `api` directory gets mounted inside of the container via a volume to ensure that the latest code changes are being tested.
+**Note**: For the `start` and `test` targets, contents within the `api`
+directory gets mounted inside of the container via a volume to ensure that the
+latest code changes are being tested.
