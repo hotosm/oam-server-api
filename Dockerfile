@@ -1,32 +1,29 @@
-FROM node:0.10-slim
+FROM node:4.2-slim
 
 MAINTAINER Humanitarian OpenStreetMap Team
 
 ENV HOME /app
 ENV PORT 8000
+ENV npm_config_loglevel warn
 
-RUN apt-get update
-RUN apt-get install -y python
-RUN apt-get install -y python-pip
-RUN pip install awscli
+RUN apt-get update && \
+  apt-get install -y python-pip && \
+  apt-get clean && \
+  pip install awscli
 
-RUN mkdir -p /app/api
+RUN useradd \
+  --create-home \
+  --home-dir /app \
+  --user-group \
+  oam
+
+USER oam
 WORKDIR /app
 
 COPY ./api/package.json /app/
 
 RUN npm install
 
-RUN useradd \
-  --home-dir /app/api \
-  --system \
-  --user-group \
-  oam \
-  && chown -R oam:oam /app
+COPY api/ /app
 
-USER oam
-WORKDIR /app/api
-
-COPY api/ /app/api
-
-ENTRYPOINT ["npm"]
+ENTRYPOINT npm start
