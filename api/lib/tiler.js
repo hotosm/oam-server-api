@@ -4,9 +4,8 @@ var assert = require("assert"),
     path = require("path"),
     util = require("util");
 
-var AWS = require('aws-sdk'),
-    env = require("require-env"),
-    _ = require("underscore");
+var AWS = require("aws-sdk"),
+    env = require("require-env");
 
 var shell = require("./shell");
 
@@ -29,10 +28,10 @@ var REQUEST_PREFIX = "requests";
 
 var calculateClusterParameters = function calculateClusterParameters(images) {
   var len = images.length;
-  
+
   var nodes = process.env.OAM_EMR_CLUSTER_SIZE;
   if (!nodes) {
-    if(len < SMALL_IMAGE_COUNT) {
+    if (len < SMALL_IMAGE_COUNT) {
       nodes = SMALL_CLUSTER_SIZE;
     } else if (len < MED_IMAGE_COUNT) {
       nodes = MED_CLUSTER_SIZE;
@@ -57,18 +56,18 @@ var uploadRequest = function uploadRequest(bucket, key, request, callback) {
   var params = {
     Bucket: bucket,
     Key: key,
-    ACL: 'bucket-owner-full-control',
+    ACL: "bucket-owner-full-control",
     Body: JSON.stringify(request)
   };
 
   s3.putObject(params, function(err, data) {
     if (err) {
       return callback(err);
-    } else {
-      console.log(JSON.stringify(request, null, 2));
-      return callback();
     }
-  });  
+
+    console.warn(request);
+    return callback();
+  });
 };
 
 module.exports.launchJob = function launchJob(jobId, images, callback) {
@@ -79,7 +78,7 @@ module.exports.launchJob = function launchJob(jobId, images, callback) {
   var requestKey = path.join(REQUEST_PREFIX, jobId + ".json");
   var requestUri = util.format("s3://%s/%s", workspaceBucket, requestKey);
   var chunkResultUri = util.format("s3://%s/%s", workspaceBucket, path.join(workspaceKey, "step1_result.json"));
-  
+
   var requestJson = {
     jobId: jobId,
     target: target,
@@ -183,9 +182,9 @@ module.exports.fetchRequest = function fetchRequest(jobId, callback) {
   s3.getObject(params, function(err, data) {
     if (err) {
       return callback(err);
-    } else {
-      return callback(null, JSON.parse(data.Body.toString()));
     }
+
+    return callback(null, JSON.parse(data.Body.toString()));
   });
 };
 
@@ -200,12 +199,15 @@ module.exports.listRequests = function listRequests(callback) {
       return callback(err);
     }
 
-    var files = _.filter(data.Contents, function(content) { 
-      return content.Size > 0; 
+    var files = data.Contents.filter(function(content) {
+      return content.Size > 0;
     });
 
-    return callback(null, _.map(files, function(content) {
-      return { jobId: path.parse(content.Key).name, request_time: content.LastModified };
+    return callback(null, files.map(function(content) {
+      return {
+        jobId: path.parse(content.Key).name,
+        request_time: content.LastModified
+      };
     }));
   });
 };
