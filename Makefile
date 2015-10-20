@@ -24,8 +24,7 @@ test: api
 		--name oam-server-api-test \
 		--link oam-server-api:oam-server-api \
 		--volume $(PWD)/api:/app/api \
-		--entrypoint /usr/local/bin/npm \
-		$(DOCKER_IMAGE) test
+		$(DOCKER_IMAGE) npm test
 
 	@docker kill oam-server-api > /dev/null
 

@@ -26,4 +26,4 @@ RUN npm install
 
 COPY api/ /app
 
-ENTRYPOINT npm start
+CMD npm start
