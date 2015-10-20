@@ -29,4 +29,4 @@ test: api
 
 	@docker kill oam-server-api > /dev/null
 
-.PHONY: all api start test clean
+.PHONY: all api start test
