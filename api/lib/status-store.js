@@ -17,7 +17,7 @@ var log = debug("oam:status"),
 module.exports.retrieve = function retrieve(jobId, callback) {
   var params = {
     Bucket: BUCKET,
-    Key: path.join(PREFIX, jobId)
+    Key: path.join(PREFIX, jobId + "-status.json")
   };
 
   s3.getObject(params, function(err, data) {
@@ -35,7 +35,7 @@ module.exports.create = function retrieve(jobId, callback) {
     status: "PENDING",
     stage: "PENDING"
   };
-  var statusKey = path.join(PREFIX, jobId);
+  var statusKey = path.join(PREFIX, jobId + "-status.json");
   var statusPath = util.format("s3://%s/%s", BUCKET, statusKey);
 
   var params = {
