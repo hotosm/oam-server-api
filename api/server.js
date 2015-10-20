@@ -7,8 +7,7 @@ var bodyParser = require("body-parser"),
     chance = require("chance"),
     express = require("express"),
     morgan = require("morgan"),
-    uuid = require("uuid"),
-    _ = require("underscore");
+    uuid = require("uuid");
 
 var auth = require("./lib/auth"),
     statusStore = require("./lib/status-store"),
@@ -32,7 +31,8 @@ app.get("/", function(req, res) {
  */
 app.post("/tile", function(req, res, next) {
   try {
-    assert.equal("application/json", req.headers["content-type"], "Payload must be 'application/json'");
+    assert.ok(req.query.token, "'token' query parameter is needed to kick off tiling jobs.");
+    assert.equal("application/json", req.headers["content-type"], "Payload's Content-Type must be 'application/json'");
     assert.ok(Array.isArray(req.body.sources), "sources must be a list of images.");
 
     req.body.sources.forEach(function(src) {
@@ -48,17 +48,13 @@ app.post("/tile", function(req, res, next) {
     return next(err);
   }
 
-  // Require a token for authentication. Hack-tastic.
-  if(!req.query.token) {
-    return res.status(500).json({
-      error: "TOKEN REQUIRED",
-      message: "'token' query parameter is needed to kick off tiling jobs."
-    });
-  }
-
   return auth.fetchTokens(function(err, tokens) {
-    if(!_.contains(tokens, req.query.token)) {
-      return res.status(500).json({
+    if (err) {
+      return next(err);
+    }
+
+    if (tokens.indexOf(req.query.token) < 0) {
+      return res.status(403).json({
         error: "INVALID TOKEN",
         message: "The token parameter is invalid. Please contact an administrator for a valid token."
       });
@@ -66,25 +62,20 @@ app.post("/tile", function(req, res, next) {
 
     var jobId = uuid.v4();
 
+    // send a response immediately back to the client
+    res.status(202).json({
+      id: jobId
+    });
+
     return tiler.launchJob(jobId, req.body.sources, function(err) {
       if (err) {
-        return res.status(500).json({
-          error: "Tiler error",
-          message: err.message
-        });
+        return console.warn(err.stack);
       }
 
       return statusStore.create(jobId, function(err) {
         if (err) {
-          return res.status(500).json({
-            error: "Tiler error",
-            message: err.message
-          });
+          return console.warn(err.stack);
         }
-
-        return res.status(202).json({
-          id: jobId
-        });
       });
     });
   });
@@ -94,7 +85,7 @@ app.post("/tile", function(req, res, next) {
  * Get info about a tiling request.
  */
 app.get("/info/:uuid", function(req, res, next) {
-  tiler.fetchRequest(req.params.uuid, function(err, tileRequest) {
+  return tiler.fetchRequest(req.params.uuid, function(err, tileRequest) {
     if (err) {
       return res.status(404).json({
         error: "NotFound",
@@ -115,7 +106,7 @@ app.get("/info/:uuid", function(req, res, next) {
  */
 app.get("/status/:uuid", function(req, res, next) {
   // predictable responses for debugging
-  statusStore.retrieve(req.params.uuid, function(err, status) {
+  return statusStore.retrieve(req.params.uuid, function(err, status) {
     if (err) {
       return res.status(404).json({
         error: "NotFound",
@@ -123,14 +114,14 @@ app.get("/status/:uuid", function(req, res, next) {
       });
     }
 
-    if(!status.status) {
+    if (!status.status) {
       return res.status(500).json({
         error: "Invalid Status",
         message: util.format("Invalid status found: '%j'.", status)
       });
     }
 
-    switch(status.status) {
+    switch (status.status) {
     case "PENDING":
       return res.json({
         status: "PENDING",
@@ -172,8 +163,7 @@ app.get("/status/:uuid", function(req, res, next) {
  * source, however.)
  */
 app.get("/requests", function(req, res, next) {
-  
-  tiler.listRequests(function(err, requests) {
+  return tiler.listRequests(function(err, requests) {
     if (err) {
       return next(err);
     }
@@ -196,10 +186,17 @@ app.get("/status", function(req, res, next) {
 
 app.use(function(err, req, res, next) {
   if (process.env.NODE_ENV !== "production") {
+    console.warn("Request body:", req.body);
     console.warn(err.stack);
   }
 
-  return res.status(500).json({
+  var status = 500;
+
+  if (err.name === "AssertionError") {
+    status = 400;
+  }
+
+  return res.status(status).json({
     error: err.name,
     message: err.message
   });
