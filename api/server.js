@@ -62,19 +62,20 @@ app.post("/tile", function(req, res, next) {
 
     var jobId = uuid.v4();
 
+    // send a response immediately back to the client
+    res.status(202).json({
+      id: jobId
+    });
+
     return tiler.launchJob(jobId, req.body.sources, function(err) {
       if (err) {
-        return next(err);
+        return console.warn(err.stack);
       }
 
       return statusStore.create(jobId, function(err) {
         if (err) {
-          return next(err);
+          return console.warn(err.stack);
         }
-
-        return res.status(202).json({
-          id: jobId
-        });
       });
     });
   });
