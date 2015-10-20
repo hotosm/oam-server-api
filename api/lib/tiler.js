@@ -31,6 +31,7 @@ var calculateClusterParameters = function calculateClusterParameters(images) {
   var len = images.length;
 
   var nodes = process.env.OAM_EMR_CLUSTER_SIZE;
+
   if (!nodes) {
     if (len < SMALL_IMAGE_COUNT) {
       nodes = SMALL_CLUSTER_SIZE;
@@ -41,8 +42,10 @@ var calculateClusterParameters = function calculateClusterParameters(images) {
     }
   }
 
-  var cores = nodes;
-  var executors = nodes * 4;
+  // TODO don't hard-code the number of reserved instances (2); make it
+  // configurable!
+  var cores = nodes + 2;
+  var executors = (nodes + 2) * 4;
 
   return {
     numNodes: nodes,
