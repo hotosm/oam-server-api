@@ -5,6 +5,7 @@ var assert = require("assert"),
     util = require("util");
 
 var AWS = require("aws-sdk"),
+    debug = require("debug"),
     env = require("require-env");
 
 var shell = require("./shell");
@@ -19,8 +20,8 @@ var SMALL_CLUSTER_SIZE = env.require("OAM_SMALL_CLUSTER_SIZE"),
     WORKER_INSTANCE_TYPE = env.require("OAM_EMR_WORKER_INSTANCE_TYPE"),
     WORKER_INSTANCE_BIDPRICE = env.require("OAM_EMR_WORKER_INSTANCE_BIDPRICE");
 
-var emr = new AWS.EMR();
-var s3 = new AWS.S3();
+var log = debug("oam:tiler"),
+    s3 = new AWS.S3();
 
 var BUCKET = "oam-server-tiler";
 var WORKSPACE_PREFIX = "workspace";
@@ -60,12 +61,12 @@ var uploadRequest = function uploadRequest(bucket, key, request, callback) {
     Body: JSON.stringify(request)
   };
 
-  s3.putObject(params, function(err, data) {
+  return s3.putObject(params, function(err, data) {
     if (err) {
       return callback(err);
     }
 
-    console.warn(request);
+    log(request);
     return callback();
   });
 };
