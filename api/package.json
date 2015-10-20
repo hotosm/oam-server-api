@@ -21,7 +21,6 @@
     "holdtime": "^0.1.1",
     "lru-cache": "^2.7.0",
     "morgan": "^1.6.0",
-    "request": "^2.58.0",
     "require-env": "0.0.4",
     "uuid": "^2.0.1"
   },
@@ -29,5 +28,7 @@
     "url": "https://github.com/hotosm/oam-server-api/issues"
   },
   "homepage": "https://github.com/hotosm/oam-server-api",
-  "devDependencies": {}
+  "devDependencies": {
+    "request": "^2.58.0"
+  }
 }
