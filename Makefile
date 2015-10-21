@@ -8,6 +8,7 @@ api:
 start: api
 	@docker run \
 		--rm \
+		-it \
 		--name oam-server-api \
 		--env-file .env \
 		--publish 8000:8000 \
