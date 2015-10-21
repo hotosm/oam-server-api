@@ -20,10 +20,10 @@ RUN useradd \
 USER oam
 WORKDIR /app
 
-COPY ./api/package.json /app/
+COPY ./package.json /app/
 
 RUN npm install
 
-COPY api/ /app
+COPY . /app
 
 CMD npm start
