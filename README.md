@@ -170,10 +170,12 @@ b1d7b15d6863        oam/server-api:latest   "npm start"         19 seconds ago  
   job. Required.
 * `OAM_MED_IMAGE_COUNT` - Upper bound on the number of images for a "medium"
   job.  Required.
-* `OAM_KEYNAME` - SSH key name (for interacting with an EMR cluster). Required.
-* `OAM_MASTER_INSTANCE_TYPE` - EC2 instance type to use for master nodes. Required.
-* `OAM_WORKER_INSTANCE_TYPE` - EC2 instance type to use for task nodes. Required.
-* `OAM_WORKER_INSTANCE_BIDPRICE` - Target EC2 spot price for task nodes. Required.
+* `OAM_EMR_KEYNAME` - SSH key name (for interacting with an EMR cluster). Required.
+* `OAM_EMR_MASTER_INSTANCE_TYPE` - EC2 instance type to use for master nodes. Required.
+* `OAM_EMR_CORE_CLUSTER_SIZE` - Number of core nodes to provision. Required.
+* `OAM_EMR_CORE_INSTANCE_TYPE` - EC2 instance type to use for core nodes. Required.
+* `OAM_EMR_TASK_INSTANCE_TYPE` - EC2 instance type to use for task nodes. Required.
+* `OAM_EMR_TASK_INSTANCE_BIDPRICE` - Target EC2 spot price for task nodes. Required.
 * `OAM_STATUS_BUCKET` - S3 bucket containing task status. Required.
 * `OAM_STATUS_PREFIX` - Path prefix for task statuses. Required.
 * `OAM_TILER_TOKEN_BUCKET` - S3 bucket containing OAM Catalog keys. Required.
@@ -182,6 +184,11 @@ b1d7b15d6863        oam/server-api:latest   "npm start"         19 seconds ago  
 * `OAM_EMR_CLUSTER_SIZE` - Explicity cluster size (spot instances). Optional.
 * `DEBUG` - Debug logging configuration. Set to `oam:*` for all messages.
   Optional.
+
+For the purposes of tiling, "core" and "task" nodes are functionally
+equivalent. As a result, we've split them into 2 groups; "core" nodes are
+intended to correspond to reserved instances and "task" nodes to spot
+instances.
 
 ## Testing
 
