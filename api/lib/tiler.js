@@ -10,15 +10,17 @@ var AWS = require("aws-sdk"),
 
 var shell = require("./shell");
 
-var SMALL_CLUSTER_SIZE = env.require("OAM_SMALL_CLUSTER_SIZE"),
+var CORE_CLUSTER_SIZE = env.require("OAM_EMR_CORE_CLUSTER_SIZE"),
+    SMALL_CLUSTER_SIZE = env.require("OAM_SMALL_CLUSTER_SIZE"),
     MED_CLUSTER_SIZE = env.require("OAM_MED_CLUSTER_SIZE"),
     LARGE_CLUSTER_SIZE = env.require("OAM_LARGE_CLUSTER_SIZE"),
     SMALL_IMAGE_COUNT = env.require("OAM_SMALL_IMAGE_COUNT"),
     MED_IMAGE_COUNT = env.require("OAM_MED_IMAGE_COUNT"),
     KEYNAME = env.require("OAM_EMR_KEYNAME"),
     MASTER_INSTANCE_TYPE = env.require("OAM_EMR_MASTER_INSTANCE_TYPE"),
-    WORKER_INSTANCE_TYPE = env.require("OAM_EMR_WORKER_INSTANCE_TYPE"),
-    WORKER_INSTANCE_BIDPRICE = env.require("OAM_EMR_WORKER_INSTANCE_BIDPRICE");
+    CORE_INSTANCE_TYPE = env.require("OAM_EMR_CORE_INSTANCE_TYPE"),
+    TASK_INSTANCE_TYPE = env.require("OAM_EMR_TASK_INSTANCE_TYPE"),
+    TASK_INSTANCE_BIDPRICE = env.require("OAM_EMR_TASK_INSTANCE_BIDPRICE");
 
 var log = debug("oam:tiler"),
     s3 = new AWS.S3();
@@ -28,27 +30,27 @@ var WORKSPACE_PREFIX = "workspace";
 var REQUEST_PREFIX = "requests";
 
 var calculateClusterParameters = function calculateClusterParameters(images) {
-  var len = images.length;
+  var coreNodes = process.env.OAM_EMR_CLUSTER_SIZE || CORE_CLUSTER_SIZE,
+      taskNodes = 0;
 
-  var nodes = process.env.OAM_EMR_CLUSTER_SIZE;
+  switch (true) {
+  case images.length < SMALL_IMAGE_COUNT:
+    taskNodes = SMALL_CLUSTER_SIZE;
+    break;
 
-  if (!nodes) {
-    if (len < SMALL_IMAGE_COUNT) {
-      nodes = SMALL_CLUSTER_SIZE;
-    } else if (len < MED_IMAGE_COUNT) {
-      nodes = MED_CLUSTER_SIZE;
-    } else {
-      nodes = LARGE_CLUSTER_SIZE;
-    }
+  case images.length < MED_IMAGE_COUNT:
+    taskNodes = MED_CLUSTER_SIZE;
+    break;
+
+  default:
+    taskNodes = LARGE_CLUSTER_SIZE;
   }
 
-  // TODO don't hard-code the number of reserved instances (2); make it
-  // configurable!
-  var cores = nodes + 2;
-  var executors = (nodes + 2) * 4;
+  var executors = (coreNodes + taskNodes) * 4;
 
   return {
-    numNodes: nodes,
+    numCoreNodes: coreNodes,
+    numTaskNodes: taskNodes,
     driverMemory: "2g",
     executorMemory: "2304m",
     numExecutors: executors,
@@ -91,7 +93,7 @@ module.exports.launchJob = function launchJob(jobId, images, callback) {
     request_time: new Date().toISOString()
   };
 
-  uploadRequest(workspaceBucket, requestKey, requestJson, function(err) {
+  return uploadRequest(workspaceBucket, requestKey, requestJson, function(err) {
     if (err) {
       return callback(err);
     }
@@ -102,13 +104,12 @@ module.exports.launchJob = function launchJob(jobId, images, callback) {
     // add 1 master
     instanceGroups.push(util.format("Name=Master,InstanceCount=1,InstanceGroupType=MASTER,InstanceType=%s", MASTER_INSTANCE_TYPE));
 
-    // add 2 core workers (reserved)
-    // TODO make this configurable
-    instanceGroups.push(util.format("Name=Workers,InstanceCount=%d,InstanceGroupType=CORE,InstanceType=%s", 2, WORKER_INSTANCE_TYPE));
+    // add N core workers
+    instanceGroups.push(util.format("Name=Workers,InstanceCount=%d,InstanceGroupType=CORE,InstanceType=%s", clusterParams.numCoreNodes, CORE_INSTANCE_TYPE));
 
     // add N task workers (spot)
-    if (clusterParams.numNodes > 0) {
-      instanceGroups.push(util.format("Name=SpotWorkers,InstanceCount=%d,BidPrice=%s,InstanceGroupType=TASK,InstanceType=%s", clusterParams.numNodes, WORKER_INSTANCE_BIDPRICE, WORKER_INSTANCE_TYPE));
+    if (clusterParams.numTaskNodes > 0) {
+      instanceGroups.push(util.format("Name=SpotWorkers,InstanceCount=%d,BidPrice=%s,InstanceGroupType=TASK,InstanceType=%s", clusterParams.numTaskNodes, TASK_INSTANCE_BIDPRICE, TASK_INSTANCE_TYPE));
     }
 
     var chunkStepArgs = [
