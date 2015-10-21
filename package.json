@@ -1,6 +1,6 @@
 {
   "name": "oam-server-api",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "OAM Server API",
   "main": "server.js",
   "author": "Rob Emanuele <rdemanuele@gmail.com>",
