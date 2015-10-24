@@ -170,6 +170,7 @@ b1d7b15d6863        oam/server-api:latest   "npm start"         19 seconds ago  
   job. Required.
 * `OAM_MED_IMAGE_COUNT` - Upper bound on the number of images for a "medium"
   job.  Required.
+* `OAM_TARGET_BUCKET` - S3 bucket intended to contain tilesets. Required.
 * `OAM_EMR_KEYNAME` - SSH key name (for interacting with an EMR cluster). Required.
 * `OAM_EMR_MASTER_INSTANCE_TYPE` - EC2 instance type to use for master nodes. Required.
 * `OAM_EMR_CORE_CLUSTER_SIZE` - Number of core nodes to provision. Required.
