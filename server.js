@@ -15,7 +15,9 @@ var auth = require("./lib/auth"),
 
 var app = express().disable("x-powered-by");
 
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV === "production") {
+  app.use(morgan("combined"));
+} else {
   app.use(morgan("dev"));
 }
 
